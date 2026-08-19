@@ -35,7 +35,7 @@ main { max-width: 960px; margin: 0 auto; padding: 88px 32px 36px; }
   object-fit: cover;
   object-position: center 30%;
   border-radius: 50%;
-  filter: grayscale(100%);
+  filter: grayscale(0%);
 }
 
 .eyebrow, .tag { color: var(--accent); font-size: 12px; font-weight: 500; letter-spacing: .1em; margin: 0 0 10px; }
@@ -44,7 +44,17 @@ h1, h2, h3 { font-family: "Libre Baskerville", Georgia, serif; }
 h1 { font-size: clamp(38px, 7vw, 64px); line-height: 1.1; letter-spacing: -.04em; margin-bottom: 16px; }
 .lead { color: var(--muted); max-width: 590px; font-size: 16px; margin-bottom: 18px; }
 a { color: inherit; text-underline-offset: 4px; }
-.email { color: var(--accent); font-size: 14px; }
+.contact-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  color: var(--accent);
+  font-size: 13px;
+  font-style: normal;
+}
+.contact-list a, .contact-item { align-items: center; display: inline-flex; gap: 6px; }
+.contact-list svg { fill: none; height: 15px; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; width: 15px; }
+.contact-list .brand-icon { fill: currentColor; stroke: none; }
 
 section { border-top: 1px solid var(--line); padding: 30px 0 38px; }
 h2 { font-size: 25px; margin-bottom: 24px; }
@@ -58,6 +68,7 @@ time { color: var(--muted); font-size: 12px; padding-top: 3px; text-align: right
 .work-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
 .work-card { background: #eef2ec; border-left: 3px solid var(--accent); padding: 24px; }
 .work-card h3 { font-size: 18px; }
+.placeholder-card { border-left-style: dashed; }
 
 footer { border-top: 1px solid var(--line); color: var(--muted); display: flex; justify-content: space-between; font-size: 12px; padding-top: 24px; }
 footer a { color: var(--accent); }
@@ -69,5 +80,6 @@ footer a { color: var(--accent); }
   .timeline article { grid-template-columns: 1fr; gap: 3px; }
   time { padding: 0; text-align: left; }
   .work-grid { grid-template-columns: 1fr; }
+  .contact-list { flex-direction: column; gap: 6px; }
   footer { align-items: flex-start; flex-direction: column; gap: 8px; }
 }
