@@ -19,7 +19,7 @@ body {
   line-height: 1.65;
 }
 
-main { max-width: 960px; margin: 0 auto; padding: 88px 32px 36px; }
+main { max-width: 960px; margin: 0 auto; padding: 88px 32px 36px; position: relative; z-index: 1; }
 
 .intro {
   display: grid;
@@ -85,7 +85,7 @@ footer a { color: var(--accent); }
   position: fixed;
   top: 50%;
   transform: translateY(-50%);
-  z-index: 2;
+  z-index: 0;
 }
 .line-sidebar__list { display: flex; flex-direction: column; gap: var(--item-gap); list-style: none; margin: 0; padding: 0; }
 .line-sidebar__item { position: relative; }
@@ -97,6 +97,10 @@ footer a { color: var(--accent); }
 
 @media (min-width: 1180px) {
   .line-sidebar { display: block; }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .line-sidebar { display: none; }
 }
 
 @media (max-width: 640px) {
