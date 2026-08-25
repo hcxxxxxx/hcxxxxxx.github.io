@@ -88,3 +88,70 @@ if (sidebar) {
   window.addEventListener("scroll", updateSidebarFromScroll, { passive: true });
   updateSidebarFromScroll();
 }
+
+const galleryPanels = [...document.querySelectorAll(".gallery-panel")];
+const galleryEffects = galleryPanels.map((panel) => panel.classList.contains("is-active") ? 1 : 0);
+const galleryTargets = [...galleryEffects];
+const reduceGalleryMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+let activeGalleryIndex = galleryEffects.findIndex(Boolean);
+let galleryAnimationFrame;
+let lastGalleryFrame = performance.now();
+
+function setActiveGalleryPanel(activeIndex) {
+  activeGalleryIndex = activeIndex;
+  galleryPanels.forEach((panel, index) => {
+    const isActive = index === activeIndex;
+    panel.classList.toggle("is-active", isActive);
+    panel.setAttribute("aria-pressed", String(isActive));
+    galleryTargets[index] = isActive ? 1 : 0;
+  });
+  startGalleryAnimation();
+}
+
+function animateGallery(now) {
+  const elapsed = Math.min((now - lastGalleryFrame) / 1000, 0.05);
+  const smoothing = reduceGalleryMotion ? 1 : 1 - Math.exp(-elapsed / 0.19);
+  lastGalleryFrame = now;
+  let isMoving = false;
+
+  galleryPanels.forEach((panel, index) => {
+    const next = galleryEffects[index] + (galleryTargets[index] - galleryEffects[index]) * smoothing;
+    const effect = Math.abs(galleryTargets[index] - next) < 0.0015 ? galleryTargets[index] : next;
+    galleryEffects[index] = effect;
+
+    const tiltDirection = index < activeGalleryIndex ? -1 : 1;
+    const image = panel.querySelector("img");
+    const isCompactGallery = window.matchMedia("(max-width: 640px)").matches;
+    panel.style.flexGrow = (1 + effect * 4.2).toFixed(4);
+    panel.style.transform = isCompactGallery ? "none" : `rotateY(${(tiltDirection * (1 - effect) * 6).toFixed(3)}deg)`;
+    image.style.filter = `grayscale(${(1 - effect).toFixed(4)})`;
+    image.style.transform = `translate(-50%, -50%) scale(${(1.12 - effect * .12).toFixed(4)})`;
+    isMoving ||= Math.abs(galleryTargets[index] - effect) >= 0.0015;
+  });
+
+  galleryAnimationFrame = isMoving ? requestAnimationFrame(animateGallery) : undefined;
+}
+
+function startGalleryAnimation() {
+  if (galleryAnimationFrame) cancelAnimationFrame(galleryAnimationFrame);
+  lastGalleryFrame = performance.now();
+  galleryAnimationFrame = requestAnimationFrame(animateGallery);
+}
+
+galleryPanels.forEach((panel, index) => {
+  panel.addEventListener("click", () => setActiveGalleryPanel(index));
+  panel.addEventListener("focus", () => setActiveGalleryPanel(index));
+  panel.addEventListener("pointerenter", () => {
+    if (window.matchMedia("(hover: hover)").matches) setActiveGalleryPanel(index);
+  });
+  panel.addEventListener("keydown", (event) => {
+    if (!['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp'].includes(event.key)) return;
+    event.preventDefault();
+    const direction = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : -1;
+    const nextIndex = (index + direction + galleryPanels.length) % galleryPanels.length;
+    galleryPanels[nextIndex].focus();
+  });
+});
+
+if (galleryPanels.length) startGalleryAnimation();
+window.addEventListener("resize", () => galleryPanels.length && startGalleryAnimation(), { passive: true });
