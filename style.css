@@ -75,6 +75,30 @@ time { color: var(--muted); font-size: 12px; padding-top: 3px; text-align: right
 footer { border-top: 1px solid var(--line); color: var(--muted); display: flex; justify-content: space-between; font-size: 12px; padding-top: 24px; }
 footer a { color: var(--accent); }
 
+/* Desktop section navigation, adapted from the LineSidebar interaction. */
+.line-sidebar {
+  --marker-length: 52px;
+  --item-gap: 15px;
+  display: none;
+  left: max(16px, calc(50% - 690px));
+  padding-left: var(--marker-length);
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+}
+.line-sidebar__list { display: flex; flex-direction: column; gap: var(--item-gap); list-style: none; margin: 0; padding: 0; }
+.line-sidebar__item { position: relative; }
+.line-sidebar__item::before { content: ""; inset: -6px -22px -6px calc(-1 * var(--marker-length)); position: absolute; }
+.line-sidebar__label { align-items: baseline; color: color-mix(in srgb, var(--accent) calc(var(--effect, 0) * 100%), var(--muted)); display: inline-flex; font-size: 12px; line-height: 1.2; position: relative; text-decoration: none; transform: translateX(calc(var(--effect, 0) * 16px)); }
+.line-sidebar__marker { background-color: color-mix(in srgb, var(--accent) calc(var(--effect, 0) * 100%), var(--muted)); height: 1px; left: calc(-1 * var(--marker-length)); position: absolute; top: 50%; transform: translateY(-50%) scaleX(calc(.7 + var(--effect, 0) * .5)); transform-origin: left center; width: var(--marker-length); }
+.line-sidebar__item:not(:last-child)::after { background-color: var(--muted); content: ""; height: 1px; left: calc(-1 * var(--marker-length)); opacity: .45; position: absolute; top: calc(100% + var(--item-gap) / 2); transform: translateY(-50%) scaleX(calc(.7 + var(--effect, 0) * .6)); transform-origin: left center; width: calc(var(--marker-length) * .48); }
+.line-sidebar__label:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+
+@media (min-width: 1180px) {
+  .line-sidebar { display: block; }
+}
+
 @media (max-width: 640px) {
   main { padding: 48px 20px 28px; }
   .intro { grid-template-columns: 1fr; gap: 18px; padding-bottom: 48px; }
