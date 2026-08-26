@@ -6,6 +6,142 @@ if (!window.location.hash) {
   requestAnimationFrame(() => document.documentElement.style.removeProperty("scroll-behavior"));
 }
 
+const topographyCanvas = document.querySelector(".topography-background");
+
+if (topographyCanvas) {
+  const topographyGl = topographyCanvas.getContext("webgl2", { antialias: false, powerPreference: "low-power" });
+
+  if (topographyGl) {
+    const vertexSource = `#version 300 es
+      in vec2 position;
+      void main() { gl_Position = vec4(position, 0.0, 1.0); }`;
+    const fragmentSource = `#version 300 es
+      precision highp float;
+      uniform vec2 uResolution;
+      uniform vec2 uMouse;
+      uniform float uTime;
+      uniform float uMouseActive;
+      out vec4 outColor;
+
+      float field(vec2 p) {
+        float t = uTime * 0.045;
+        float waves = sin(p.x * 2.15 + sin(p.y * 1.2 + t)) * .54;
+        waves += cos(p.y * 2.4 - sin(p.x * 1.45 - t * .8)) * .42;
+        waves += sin((p.x + p.y) * 2.7 + t * 1.2) * .28;
+        waves += cos(length(p - vec2(.26, -.16)) * 5.2 - t) * .25;
+        return waves;
+      }
+
+      void main() {
+        vec2 uv = gl_FragCoord.xy / uResolution;
+        vec2 p = uv - .5;
+        p.x *= uResolution.x / uResolution.y;
+        float height = field(p);
+        vec2 mouse = uMouse - .5;
+        mouse.x *= uResolution.x / uResolution.y;
+        float bump = exp(-dot(p - mouse, p - mouse) * 10.0) * .42 * uMouseActive;
+        height += bump;
+
+        float bands = height * 3.35;
+        float edge = abs(fract(bands) - .5);
+        float aa = fwidth(bands) * 1.55;
+        float line = 1.0 - smoothstep(.026, .026 + aa, edge);
+        float glow = 1.0 - smoothstep(.04, .12 + aa, edge);
+        float elevation = clamp((height + 1.25) / 2.5, 0.0, 1.0);
+        // Keep the palette in the blue family throughout: no white contour tier.
+        // The broad colour field restores the original blue-gradient impression,
+        // while each contour still receives its own elevation-based blue.
+        float atmosphere = smoothstep(-.7, .9, p.y + sin(p.x * .9 - uTime * .016) * .18);
+        vec3 nightBlue = vec3(.008, .025, .10);
+        vec3 horizonBlue = vec3(.018, .105, .36);
+        vec3 base = mix(nightBlue, horizonBlue, atmosphere);
+        float halo = exp(-dot(p - vec2(-.28, .18), p - vec2(-.28, .18)) * 1.25);
+        base += vec3(.012, .075, .25) * halo;
+
+        vec3 deepBlue = vec3(.018, .12, .46);
+        vec3 midBlue = vec3(.045, .38, .94);
+        vec3 skyBlue = vec3(.20, .68, 1.0);
+        vec3 blueGlow = mix(deepBlue, midBlue, smoothstep(.05, .78, elevation));
+        vec3 contour = mix(midBlue, skyBlue, smoothstep(.35, .92, elevation));
+        vec3 color = base;
+        color += blueGlow * glow * (.26 + elevation * .22);
+        color += contour * line * .88;
+        outColor = vec4(color, 1.0);
+      }`;
+
+    function compileTopographyShader(type, source) {
+      const shader = topographyGl.createShader(type);
+      topographyGl.shaderSource(shader, source);
+      topographyGl.compileShader(shader);
+      return shader;
+    }
+
+    const topographyProgram = topographyGl.createProgram();
+    const vertexShader = compileTopographyShader(topographyGl.VERTEX_SHADER, vertexSource);
+    const fragmentShader = compileTopographyShader(topographyGl.FRAGMENT_SHADER, fragmentSource);
+    topographyGl.attachShader(topographyProgram, vertexShader);
+    topographyGl.attachShader(topographyProgram, fragmentShader);
+    topographyGl.linkProgram(topographyProgram);
+    topographyGl.useProgram(topographyProgram);
+
+    const geometry = topographyGl.createBuffer();
+    topographyGl.bindBuffer(topographyGl.ARRAY_BUFFER, geometry);
+    topographyGl.bufferData(topographyGl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), topographyGl.STATIC_DRAW);
+    const position = topographyGl.getAttribLocation(topographyProgram, "position");
+    topographyGl.enableVertexAttribArray(position);
+    topographyGl.vertexAttribPointer(position, 2, topographyGl.FLOAT, false, 0, 0);
+
+    const uniforms = {
+      resolution: topographyGl.getUniformLocation(topographyProgram, "uResolution"),
+      mouse: topographyGl.getUniformLocation(topographyProgram, "uMouse"),
+      time: topographyGl.getUniformLocation(topographyProgram, "uTime"),
+      mouseActive: topographyGl.getUniformLocation(topographyProgram, "uMouseActive")
+    };
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const pointer = { currentX: .5, currentY: .5, targetX: .5, targetY: .5, active: 0 };
+    let width = 0;
+    let height = 0;
+
+    function resizeTopography() {
+      const ratio = Math.min(window.devicePixelRatio || 1, 1.5);
+      width = Math.round(window.innerWidth * ratio);
+      height = Math.round(window.innerHeight * ratio);
+      topographyCanvas.width = width;
+      topographyCanvas.height = height;
+      topographyGl.viewport(0, 0, width, height);
+    }
+
+    function renderTopography(time) {
+      pointer.currentX += (pointer.targetX - pointer.currentX) * .055;
+      pointer.currentY += (pointer.targetY - pointer.currentY) * .055;
+      topographyGl.uniform2f(uniforms.resolution, width, height);
+      topographyGl.uniform2f(uniforms.mouse, pointer.currentX, 1 - pointer.currentY);
+      topographyGl.uniform1f(uniforms.time, time * .001);
+      topographyGl.uniform1f(uniforms.mouseActive, pointer.active);
+      topographyGl.drawArrays(topographyGl.TRIANGLES, 0, 3);
+    }
+
+    function animateTopography(time) {
+      renderTopography(reducedMotion ? 0 : time);
+      if (!reducedMotion && !document.hidden) requestAnimationFrame(animateTopography);
+    }
+
+    window.addEventListener("resize", () => { resizeTopography(); renderTopography(0); }, { passive: true });
+    window.addEventListener("pointermove", (event) => {
+      pointer.targetX = event.clientX / window.innerWidth;
+      pointer.targetY = event.clientY / window.innerHeight;
+      pointer.active = 1;
+    }, { passive: true });
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden && !reducedMotion) requestAnimationFrame(animateTopography);
+    });
+    resizeTopography();
+    requestAnimationFrame(animateTopography);
+  } else {
+    topographyCanvas.classList.add("topography-background--fallback");
+  }
+}
+
 const sidebar = document.querySelector(".line-sidebar");
 const sidebarItems = [...document.querySelectorAll(".line-sidebar__item")];
 const sidebarLinks = [...document.querySelectorAll(".line-sidebar__label")];
