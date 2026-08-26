@@ -152,7 +152,7 @@ let lastFrameTime = performance.now();
 
 function animateSidebar(now) {
   const elapsed = Math.min((now - lastFrameTime) / 1000, 0.05);
-  const smoothing = 1 - Math.exp(-elapsed / 0.1);
+  const smoothing = 1 - Math.exp(-elapsed / 0.045);
   lastFrameTime = now;
   let isMoving = false;
 
@@ -167,7 +167,9 @@ function animateSidebar(now) {
 }
 
 function startSidebarAnimation() {
-  if (animationFrame) cancelAnimationFrame(animationFrame);
+  // Do not restart the frame loop for every pointer event: doing so makes a
+  // rapidly moving pointer continually postpone the visual update.
+  if (animationFrame) return;
   lastFrameTime = performance.now();
   animationFrame = requestAnimationFrame(animateSidebar);
 }
@@ -189,7 +191,7 @@ if (sidebar) {
     sidebarItems.forEach((item, index) => {
       const bounds = item.getBoundingClientRect();
       const distance = Math.abs(event.clientY - (bounds.top + bounds.height / 2));
-      const proximity = Math.max(0, 1 - distance / 100);
+      const proximity = Math.max(0, 1 - distance / 115);
       targetEffects[index] = proximity * proximity * (3 - 2 * proximity);
     });
     startSidebarAnimation();
