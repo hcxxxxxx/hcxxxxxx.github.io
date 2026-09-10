@@ -52,8 +52,8 @@ body {
   overflow-x: hidden;
 }
 
-.topography-background { height: 100vh; inset: 0; pointer-events: none; position: fixed; width: 100vw; z-index: -1; }
-.topography-background--fallback { background: radial-gradient(circle at 20% 20%, #1559d533, transparent 32%), radial-gradient(circle at 80% 70%, #4ba3ff26, transparent 36%), #030816; }
+.gradient-blinds-background { height: 100vh; inset: 0; mix-blend-mode: lighten; pointer-events: none; position: fixed; width: 100vw; z-index: -1; }
+.gradient-blinds-background--fallback { background: linear-gradient(45deg, #ff9ffc, #5227ff); }
 main { max-width: 960px; margin: 0 auto; padding: 88px 32px 36px; position: relative; }
 
 .intro {
